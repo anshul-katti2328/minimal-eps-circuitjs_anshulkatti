@@ -1,25 +1,36 @@
-Key queries & actions I asked the assistant during the project (chronological / paraphrased):
+<img width="752" height="578" alt="image" src="https://github.com/user-attachments/assets/8e2012cd-5078-42b2-8dbe-d908c3f3b853" />
+<img width="1509" height="175" alt="image" src="https://github.com/user-attachments/assets/fbfad22e-5ed9-4591-97f3-4d2aa41b649e" />
+1. Outputs (waveforms & screenshots)
 
-“Where do I add the OBC resistor (27 Ω) and why 27 Ω?”
+These are things you must extract from CircuitJS:
 
-“Add the OBC load (always ON) in Falstad — how to place and value it.”
+Battery voltage (Vbus) → place a scope probe on the node after the 0.3 Ω resistor and export the scope plot (File → Export → As Image).
 
-“Where do I put the relay and which pins connect to what?” (multiple pin-by-pin wiring checks)
+Battery current (Ibatt) → right-click the 0.1 Ω resistor (battery internal R) → “View Current” and export the scope waveform.
 
-“My relay coil draws huge current — why and how to fix?”
+Solar current (Isolar) → right-click the VCCS (your PWL source) → “View Current” and export.
 
-“Why does PWL not work in a simple voltage/current source?” (explain dependent source requirement)
+Load currents  → check OBC (27 Ω), Payload (10 Ω), TT&C (5 Ω) branches by probing those resistors.
 
-“How do I make a timed sun/eclipse profile (60 min on / 30 min off) using PWL?”
 
-“How to replace the solar relay with a timed source (VCCS) — exact PWL string?”
 
-“How to wire the VCCS pins (control +/−, output +/−) to the bus and ground.”
+2)Observations:
+The green line is the battery source (fixed at 7.4 V, as expected for two Li-ion cells in series).
 
-“How to probe Vbus and per-branch currents with the scope (where exactly to place probes).”
+The yellow line is the bus voltage measured after the series resistance (0.3 Ω + 0.1 Ω internal).
 
-“Why doesn’t the bus drop to 0 V during eclipse and how do we force 0 V if needed?”
+The bus voltage is slightly lower than 7.4 V (~2.5–3 V depending on load conditions), showing the voltage droop caused by current flowing through the resistive losses.
 
-“Simulation options: what time step and time scale to use for fast test vs real orbit.”
+The waveform remains nearly flat rather than toggling to 0 V, because the battery always maintains the bus voltage — even during eclipse, when the solar PWL source drops to 0. This matches the real CubeSat case: the bus is never “0 V,” it is battery-clamped, and only the battery current changes sign (charging vs discharging).
 
-Use these exact prompts in the order above if you want to reproduce the same debugging path.
+
+30Element to function mapping:
+| CircuitJS Element                  | Value / Params           | Real EPS Function                        |
+| ---------------------------------- | ------------------------ | ---------------------------------------- |
+| Voltage source + 0.1 Ω resistor    | 7.4 V, 0.1 Ω             | Battery + internal resistance            |
+| Series resistor                    | 0.3 Ω                    | EPS loss / wiring / MPPT efficiency      |
+| VCCS with PWL                      | 0.81 A sun / 0 A eclipse | Solar array + MPPT profile (sun/eclipse) |
+| Resistor (27 Ω)                    | Always ON                | OBC + housekeeping load                  |
+| Resistor (10 Ω) + relay            | Switched                 | Payload load                             |
+| Resistor (5 Ω) + relay, 50 mHz PWM | Bursts                   | TT\&C load (short bursts)                |
+| Scope probes                       | Vbus, Ibatt, Isolar      | Measurement outputs for analysis         |
